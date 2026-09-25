@@ -1,0 +1,84 @@
+module uart_rx(
+               input clk,
+               input rst,
+               input rdy_clr,
+               input clk_enb,
+               input rx,
+               output reg rdy,
+               output reg [7:0]data_out);
+  
+  parameter start_state=2'b00;
+  parameter dataout_state=2'b01;
+  parameter stop_state=2'b10;
+  
+  reg[3:0]sample;
+  reg[2:0]index;
+  reg[7:0]temp;
+  reg[1:0]state;
+  
+  always@(posedge clk)begin
+    if(rst)begin
+    rdy=1'b0;
+    state<=start_state;
+    sample<=4'h0;
+    index<=3'h0;
+    temp<=8'h0;
+    end
+    else begin
+      
+    if(rdy_clr) begin
+      rdy=1'b0;
+     
+      if(clk_enb) begin
+        case(state)
+          start_state :begin
+            if(rx==1'b0)begin
+            sample=sample+1'b0;
+            if(sample==4'hF) begin
+              state<=dataout_state;
+              sample<=4'h0;
+              index<=3'h0;
+              temp<=8'h0;
+              data_out<=8'h0;
+            end
+          end
+            else 
+              state<=start_state;
+          end
+     
+          
+          dataout_state:begin
+            sample=sample+1'b1;
+            if(sample==4'h8) begin
+              temp[index]<=rx;   //taking value of rx in index of temp
+            end
+              if(sample==4'hF)begin
+                sample<=4'b0;
+              end
+                if(index==3'h7)begin
+                state<=stop_state;
+         end
+            else 
+               index=index+1'b1;
+          end
+            
+            stop_state:begin
+              sample=sample+1'b1;
+              if(sample == 4'hF) begin
+                state <= start_state;
+                data_out<=temp[index];
+                rdy=1'b1;
+                sample<=4'b0;
+              end
+            end
+          default:begin
+            state<=start_state;
+            sample<=4'b0;
+            index<=3'b0;
+          end
+              endcase
+          end
+        end
+    end  
+  end
+          endmodule
