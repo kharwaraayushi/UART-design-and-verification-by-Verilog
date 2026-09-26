@@ -1,0 +1,86 @@
+`timescale 1ns/1ps
+module uart_tb;
+  reg clk;
+  reg rst;
+  reg wr_enb;
+  reg [7:0]data_in;
+  reg rdy_clr;
+  
+  wire tx_enb;
+  wire rx_enb;
+  wire tx;
+  wire busy;
+  wire rdy;
+  wire[7:0]data_out;
+  
+  initial begin
+    clk=0;
+  end
+ always #10 clk = ~clk;
+  
+  baudrate_generator#(
+    .clk_freq(50_000_000),
+    .baud_rate(9600),
+    .oversampling(16) )
+ baud_gen ( .clk(clk),
+   .tx_enb(tx_enb),
+   .rx_enb(rx_enb) );
+  
+  uart_tx TX( .clk(clk),
+          .rst(rst),
+          .wr_enb(wr_enb),
+            .enb(tx_enb),
+          .data_in(data_in),
+          .tx(tx),
+          .busy(busy) );
+  
+  uart_rx RX( .clk(clk),
+          .rst(rst),
+          .rdy_clr(rdy_clr),
+          .clk_enb(rx_enb),
+             .rx(tx),
+          .rdy(rdy),
+          .data_out(data_out) );
+  
+  initial begin
+    clk =0;
+    rst =1;
+    wr_enb=0;
+    data_in=8'h0;
+    rdy_clr = 1;
+  
+   #100
+    rst=0;
+    #100
+    
+    data_in=8'h55;
+     wr_enb=1;
+    #20
+    wr_enb=0;
+    
+    
+    #2_000_000
+    
+    if(data_out==8'h55)begin
+      $display("TEST PASS");
+    end
+      else begin
+        $display("TEST FAIL");
+  end
+      
+      $display("TX = %h", data_in);
+      $display("RX = %h", data_out);
+      
+    
+      $finish;
+      
+    
+  end
+    
+    
+    initial begin
+      $dumpfile("uart.vcd");
+      $dumpvars(0, uart_tb);
+    end 
+    
+    endmodule
