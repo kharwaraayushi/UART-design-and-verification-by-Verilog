@@ -9,7 +9,12 @@ module baudrate_generator#(
 
   reg [12:0]tx_counter;
   reg[9:0]rx_counter;
-   
+
+initial begin
+    tx_counter = 0;
+    rx_counter = 0;
+  end
+
   always@(posedge clk) begin
     if(tx_counter==TX)
      tx_counter=0;
