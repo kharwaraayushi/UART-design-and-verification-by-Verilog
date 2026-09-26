@@ -18,11 +18,12 @@ module uart_rx(
   
   always@(posedge clk)begin
     if(rst)begin
-    rdy=1'b0;
-    state<=start_state;
-    sample<=4'h0;
-    index<=3'h0;
-    temp<=8'h0;
+    rdy <= 1'b0;
+    state <= start_state;
+    sample <= 4'h0;
+    index <= 3'h0;
+    temp <= 8'h00;
+    data_out <= 8'h00;
     end
     else begin
       
@@ -33,7 +34,7 @@ module uart_rx(
         case(state)
           start_state :begin
             if(rx==1'b0)begin
-            sample=sample+1'b0;
+               sample <= sample + 1'b1;
             if(sample==4'hF) begin
               state<=dataout_state;
               sample<=4'h0;
@@ -48,25 +49,34 @@ module uart_rx(
      
           
           dataout_state:begin
-            sample=sample+1'b1;
+            if(clk_enb)begin
             if(sample==4'h8) begin
               temp[index]<=rx;   //taking value of rx in index of temp
             end
+           
               if(sample==4'hF)begin
                 sample<=4'b0;
-              end
+              
                 if(index==3'h7)begin
+                data_out<=temp;
                 state<=stop_state;
          end
-            else 
+            else begin 
                index=index+1'b1;
           end
-            
+            end
+            else begin
+              sample <= sample+1'b1;
+            end
+          end  
+          end   
+          
+          
             stop_state:begin
               sample=sample+1'b1;
               if(sample == 4'hF) begin
                 state <= start_state;
-                data_out<=temp[index];
+                data_out<=temp;
                 rdy=1'b1;
                 sample<=4'b0;
               end
